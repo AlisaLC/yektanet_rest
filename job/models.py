@@ -1,6 +1,7 @@
 import math
 from datetime import datetime
 
+from Levenshtein import distance
 from django.db import models
 
 
@@ -135,10 +136,11 @@ class JobAd(models.Model):
             return JobAd.objects.none()
         N = len(ids)
         results = {}
+        indexes = JobAdSearch.objects.filter(ad__id__in=ids)
         for token in text:
-            indexes = JobAdSearch.objects.filter(ad__id__in=ids, word=token)
-            idf = math.log(N / min(len(indexes) + 1, N))
-            for index in indexes:
+            token_indexes = [token_index for token_index in indexes if distance(token_index.word, token) <= 1]
+            idf = math.log(N / min(len(token_indexes) + 1, N))
+            for index in token_indexes:
                 tfidf = index.index * idf
                 if index.ad.id not in results:
                     results[index.ad.id] = 0
